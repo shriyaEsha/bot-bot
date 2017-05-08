@@ -11,37 +11,47 @@ import numpy as np
 import datetime
 import settings
 import populationk
+import random 
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32"
+import theano
 
 def main():
-    np.random.seed()
+    np.random.seed(7)
     pg.init()
 
     # Initialize runtime variables.
-    periodically_save = True
+    periodically_save = raw_input("Use saved data?")
+    if periodically_save.lower() in ("y", "yes"):
+        periodically_save = True
+    else:
+        periodically_save = False
+    print periodically_save
     pop = None
     if periodically_save and os.path.isfile("save.txt"):# and input("Save file detected! Use it? (y/n): ").lower() == 'y':
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
+        print "Using saved data!"
     else:
-        pop_size = 0
-        mutation_rate = 0
-        while True:
-            pop_size = int(input("Population size: "))
-            if pop_size < 5:
-                print("Population size must be at least 5!")
-            else:
-                break
-        while True:
-            mutation_rate = float(input("Mutation rate: "))
-            if mutation_rate <= 0 or mutation_rate >= 1:
-                print("Mutation rate must be in the range (0, 1)!")
-            else:
-                break
-        while True:
-            settings.TIME_MULTIPLIER = float(input("Time multiplier: "))
-            if settings.TIME_MULTIPLIER < 1:
-                print("Time multiplier must be at least 1!")
-            else:
-                break
+        pop_size = 15
+        mutation_rate = 0.5
+        no_food = 5
+        # while True:
+        #     pop_size = int(input("Population size: "))
+        #     if pop_size < 5:
+        #         print("Population size must be at least 5!")
+        #     else:
+        #         break
+        # while True:
+        #     mutation_rate = float(input("Mutation rate: "))
+        #     if mutation_rate <= 0 or mutation_rate >= 1:
+        #         print("Mutation rate must be in the range (0, 1)!")
+        #     else:
+        #         break
+        # while True:
+        #     settings.TIME_MULTIPLIER = float(input("Time multiplier: "))
+        #     if settings.TIME_MULTIPLIER < 1:
+        #         print("Time multiplier must be at least 1!")
+        #     else:
+        #         break
         # adv = input("Advance options? (y/n): ")
         # if adv == "y":
         #     while True:
@@ -62,9 +72,9 @@ def main():
         #             print("Window height must be at least 50!")
         #         else:
         #             break
-    pop = populationk.Population(pop_size, mutation_rate)
+        pop = populationk.Population(pop_size, mutation_rate, no_food)
     # if input("Periodically save every half hour? (y/n): ").lower() == 'y':
-    periodically_save = False
+    # periodically_save = True
     print("\nNote: ")
     print("\tPress 'r' to reset the populationk.")
     print("\tPress 'p' to pause / unpause.")
@@ -99,7 +109,7 @@ def main():
                     paused = not paused
             elif event.type == pg.MOUSEBUTTONUP:
                 pos = pg.mouse.get_pos()
-                pop.food.pop()
+                pop.food.pop(random.randint(0, len(pop.food)))
                 food = populationk.Food(pop)
                 food.x = pos[0]
                 food.y = pos[1]

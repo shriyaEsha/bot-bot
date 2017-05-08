@@ -13,7 +13,7 @@ class Population:
     The environment of bots and food.
     """
 
-    def __init__(self, size, mutation_rate):
+    def __init__(self, size, mutation_rate, no_food):
         assert(size >= 5)
         assert(0 < mutation_rate < 1)
         self.SIZE = size
@@ -32,7 +32,8 @@ class Population:
         for i in range(size):
             random_rgb = (np.random.randint(30, 256), np.random.randint(30, 256), np.random.randint(30, 256))
             self.bots.append(Bot(NeuralNet((1, 2, 4), ("sigmoid", "softmax")), random_rgb, self))
-        self.food.append(Food(self))
+        for i in range(no_food):
+            self.food.append(Food(self))
 
     def eliminate(self, bot, replace = False):
         self.time_since_last_death = 0.0
