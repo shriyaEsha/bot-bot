@@ -29,9 +29,11 @@ class Population:
         # of the bot's direction and if there is or isn't food in the bots field
         # of vision. Output consists of whether or not to move foward, turn
         # left, turn right, or do nothing.
+        neural_net_example = NeuralNet((1, 2, 4), ("sigmoid", "softmax"))
         for i in range(size):
             random_rgb = (np.random.randint(30, 256), np.random.randint(30, 256), np.random.randint(30, 256))
-            self.bots.append(Bot(NeuralNet((1, 2, 4), ("sigmoid", "softmax")), random_rgb, self))
+            example_bot = Bot(neural_net_example, random_rgb, self)
+            self.bots.append(example_bot)
         for i in range(no_food):
             self.food.append(Food(self))
 
@@ -42,11 +44,17 @@ class Population:
             random_rgb = (np.random.randint(30, 256), np.random.randint(30, 256), np.random.randint(30, 256))
             self.bots.append(Bot(NeuralNet((1, 2, 4), ("sigmoid", "softmax")), random_rgb, self))
 
-    def feed(self, bot, food):
-        print "Bot-Food collision"
+    def feed(self, bot, food, is_bot=False):
         bot.score = 1.0
-        self.food.remove(food)
-        self.food.append(Food(self))
+        if is_bot == False:
+            print "Bot-Food collision"
+            self.food.remove(food)
+            self.food.append(Food(self))
+        else: # bot-bot collision
+            print "Bot-Bot collision"
+            # self.bots.remove(food)
+            # raw_input()
+
         num_to_replace = int(self.SIZE / 7 - 1)
         if num_to_replace < 2:
             num_to_replace = 2
@@ -115,7 +123,15 @@ class Population:
             if food_in_sight:
                 sensory_input.append(1.0)
             else:
-                sensory_input.append(0.0)
+                # version1 - check if bot in sight - eat that if it's there! :P
+                for bbot in self.bots:
+                    if angle_is_between(find_angle(bot.x, bot.y, bbot.x, bbot.y), min_theta, max_theta):
+                        food_in_sight = True
+                        break
+                if food_in_sight:
+                    sensory_input.append(1.0)
+                else:
+                    sensory_input.append(0.0)
 
             # Useful debugging outputs.
             #print(bot.RGB)
@@ -182,6 +198,15 @@ class Bot:
         self.score -= 1.0 / settings.FPS / 10.0 * dt * settings.TIME_MULTIPLIER
         if self.score < -1:
             self.score = -1.0
+
+        """
+        Updates the bot's internals and handles bot<->bot collision.
+        """
+        for bbot in self.pop.bots:
+            if distance_between(self.x, self.y, bbot.x, bbot.y) <= Bot.HITBOX_RADIUS + Bot.HITBOX_RADIUS:
+                self.pop.feed(bbot, self, True)
+                break
+
         # neural network - feedforward
         # self.nnet.feed_forward(sensory_input)
         output = self.nnet.output(sensory_input)
