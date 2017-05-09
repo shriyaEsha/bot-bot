@@ -86,8 +86,11 @@ class Population:
             if np.random.uniform(0, 1) <= self.mutation_rate:
                 new_rgb = colors[np.random.randint(0,2)]
                 new_bot = Bot(bot.nnet, new_rgb, self)
-                new_bot.x = bot.x + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
-                new_bot.y = bot.y + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
+                # new_bot.x = bot.x + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
+                # new_bot.y = bot.y + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
+                new_bot.x = np.random.randint(settings.WINDOW_WIDTH) + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
+                new_bot.y = np.random.randint(settings.WINDOW_HEIGHT) + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
+                
                 # nn
                 nb_c = new_bot.nnet.get_all_weights()
                 mutated = False
@@ -109,12 +112,15 @@ class Population:
                     #         mutated = True
                 new_bot.nnet.set_all_weights(nb_c)
                 self.bots.append(new_bot)
+                self.bots[self.bots.index(new_bot)].RGB = (255,255,255)
+
             # sexual - crossover
             else:
                 print "Sexual! :P"
                 sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
                 # get first 2 strongest bots
                 bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
+                bot1.change_color((255,255,255))  
                 conn1 = bot1.nnet.get_all_weights()
                 conn2 = bot2.nnet.get_all_weights()
                 # get random weight to crossover
@@ -127,6 +133,7 @@ class Population:
                 new_bot.nnet.set_all_weights(conn3)
                 new_bot.x = bot.x + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
                 new_bot.y = bot.y + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
+
                 self.bots.append(new_bot)
 
     def update(self, dt):
@@ -140,8 +147,11 @@ class Population:
             if food not in self.food:
                 continue
             food.update(dt)
-
+        colors = [(255,0,0), (0,255,0)]
         for bot in self.bots[:]:
+            if bot.RGB == (255,255,255) and self.time_since_last_death >= 0.26:
+                idx = self.bots.index(bot)
+                self.bots[idx].RGB = colors[np.random.randint(2)]
             if bot not in self.bots:
                 continue
 
@@ -151,35 +161,32 @@ class Population:
             min_theta = bot.theta - Bot.FIELD_OF_VISION_THETA / 2
             max_theta = bot.theta + Bot.FIELD_OF_VISION_THETA / 2
             food_in_sight = False
-            # food for herbi_bots
-            if bot.RGB == (0,255,0):
-                for food in self.food:
-                    if angle_is_between(find_angle(bot.x, bot.y, food.x, food.y), min_theta, max_theta):
-                        food_in_sight = True
-                        break
-                if food_in_sight:
-                    sensory_input.append(1.0)
-                else:
-                    sensory_input.append(0.0)
+            # food in front
+            for food in self.food:
+                if angle_is_between(find_angle(bot.x, bot.y, food.x, food.y), min_theta, max_theta):
+                    food_in_sight = True
+                    break
+            if food_in_sight:
+                sensory_input.append(1.0)
+            else:
                 sensory_input.append(0.0)
-            # carni_bot
-            elif bot.RGB == (255,0,0):
+            
+            # bot in front
+            food_in_sight = False
+            # version1 - check if bot in sight - eat that if it's there! :P
+            idx = self.bots.index(bot)
+            for bbot in self.bots:
+                if bot.RGB != bbot.RGB and self.bots.index(bbot) != idx and angle_is_between(find_angle(bot.x, bot.y, bbot.x, bbot.y), min_theta, max_theta):
+                    food_in_sight = True
+                    break
+            if food_in_sight:
+                sensory_input.append(1.0)
+            else:
                 sensory_input.append(0.0)
-                food_in_sight = False
-                # version1 - check if bot in sight - eat that if it's there! :P
-                idx = self.bots.index(bot)
-                for bbot in self.bots:
-                    if bot.RGB != bbot.RGB and self.bots.index(bbot) != idx and angle_is_between(find_angle(bot.x, bot.y, bbot.x, bbot.y), min_theta, max_theta):
-                        food_in_sight = True
-                        break
-                if food_in_sight:
-                    sensory_input.append(1.0)
-                else:
-                    sensory_input.append(0.0)
 
             # Useful debugging outputs.
-            #print(bot.RGB)
-            #print(sensory_input)
+            # print(bot.RGB)
+            # print(sensory_input)
 
             bot.update(dt, sensory_input)
 
@@ -213,9 +220,15 @@ class Bot:
         self.RGB = rgb
         self.pop = population
         self.theta = np.random.uniform(0, 1) * 2 * np.pi
-        self.x = settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS * np.random.uniform(0, 1) * np.cos(self.theta)
-        self.y = settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS * np.random.uniform(0, 1) * np.sin(self.theta)
+        # self.x = settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS * np.random.uniform(0, 1) * np.cos(self.theta)
+        # self.y = settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS * np.random.uniform(0, 1) * np.sin(self.theta)
+        self.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
+        self.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
+        
         self.score = 0.0
+
+    def change_color(self, color):
+        self.RGB = color
 
     def _move_forward(self, dt):
         self.x += Bot.SPEED / settings.FPS * dt * np.cos(self.theta) * settings.TIME_MULTIPLIER

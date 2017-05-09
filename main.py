@@ -173,6 +173,7 @@ def render(window, FONT, pop):
 
     for bot in pop.bots:
         # Draw body.
+        print bot.RGB
         pg.draw.circle(window, bot.RGB, (int(bot.x), int(bot.y)), bot.HITBOX_RADIUS)
 
         # Draw field-of-vision lines.

@@ -33,6 +33,7 @@ class NeuralNet:
         pred = self.model.predict(np.array(input))[0]
         # perform OHE on pred
         pred = [1 if i == max(pred) else 0 for i in pred]
+        # print pred
         # return pred
         return [1., 0, 0, 0]
 
