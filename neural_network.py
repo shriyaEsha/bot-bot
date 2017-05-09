@@ -5,9 +5,10 @@ modularize the build/use process of the neural network.
 
 import numpy as np
 import pickle
-
+import os
+import h5py
 # create NN using Keras
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Activation
 from keras.optimizers import SGD
 from keras.layers import Dense
@@ -17,12 +18,16 @@ np.random.seed(7)
 
 class NeuralNet:
     def __init__(self, layers, activation_fns, bias = False):
-        self.model = Sequential()
-        self.model.add(Dense(layers[0], input_dim=1, init="random_uniform", activation=activation_fns[0]))
-        self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
-        self.model.add(Dense(layers[2]))
-        self.model.add(Activation(activation_fns[1]))
-        self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+        if os.path.isfile("model.h5"):
+            self.model = load_model("model.h5")
+        else:
+            self.model = Sequential()
+            self.model.add(Dense(layers[0], input_dim=1, init="random_uniform", activation=activation_fns[0], use_bias=False))
+            self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
+            self.model.add(Dense(layers[2]))
+            self.model.add(Activation(activation_fns[1]))
+            self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+            self.model.save("model.h5")
 
     def output(self, input):
         pred = self.model.predict(np.array(input))[0]

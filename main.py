@@ -12,7 +12,7 @@ import datetime
 import settings
 import populationk
 import random 
-os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32"
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=cpu,floatX=float32"
 import theano
 
 def main():
@@ -31,9 +31,9 @@ def main():
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
         print "Using saved data!"
     else:
-        pop_size = 10
+        pop_size = 50
         mutation_rate = 0.5
-        no_food = 5
+        no_food = 10
         # while True:
         #     pop_size = int(input("Population size: "))
         #     if pop_size < 5:
@@ -109,7 +109,7 @@ def main():
                     paused = not paused
             elif event.type == pg.MOUSEBUTTONUP:
                 pos = pg.mouse.get_pos()
-                pop.food.pop(random.randint(0, len(pop.food)))
+                pop.food.pop(random.randint(0, len(pop.food)-1))
                 food = populationk.Food(pop)
                 food.x = pos[0]
                 food.y = pos[1]
