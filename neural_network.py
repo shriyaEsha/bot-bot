@@ -22,7 +22,7 @@ class NeuralNet:
             self.model = load_model("model.h5")
         else:
             self.model = Sequential()
-            self.model.add(Dense(layers[0], input_dim=1, init="random_uniform", activation=activation_fns[0], use_bias=False))
+            self.model.add(Dense(layers[0], input_dim=2, init="random_uniform", activation=activation_fns[0], use_bias=False))
             self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
             self.model.add(Dense(layers[2]))
             self.model.add(Activation(activation_fns[1]))

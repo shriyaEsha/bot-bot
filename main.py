@@ -31,7 +31,7 @@ def main():
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
         print "Using saved data!"
     else:
-        pop_size = 50
+        pop_size = 20
         mutation_rate = 0.5
         no_food = 10
         # while True:

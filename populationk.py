@@ -29,10 +29,16 @@ class Population:
         # of the bot's direction and if there is or isn't food in the bots field
         # of vision. Output consists of whether or not to move foward, turn
         # left, turn right, or do nothing.
-        neural_net_example = NeuralNet((1, 2, 4), ("sigmoid", "softmax"))
+        neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"))
         colors = [(255,0,0), (0,255,0)]
+        # spawning equal no of carni_bots and herbi_bots
         for i in range(size):
-            random_rgb = colors[np.random.randint(0, 2)]
+            random_rgb = colors[0]
+            example_bot = Bot(neural_net_example, random_rgb, self)
+            self.bots.append(example_bot)
+
+        for i in range(size):
+            random_rgb = colors[1]
             example_bot = Bot(neural_net_example, random_rgb, self)
             self.bots.append(example_bot)
         for i in range(no_food):
@@ -44,7 +50,7 @@ class Population:
         colors = [(255,0,0), (0,255,0)]
         if replace:
             random_rgb = colors[np.random.randint(0, 2)]
-            self.bots.append(Bot(NeuralNet((1, 2, 4), ("sigmoid", "softmax")), random_rgb, self))
+            self.bots.append(Bot(NeuralNet((2, 5, 4), ("sigmoid", "softmax")), random_rgb, self))
 
     def feed(self, bot, food, is_bot=False):
         bot.score = 1.0
@@ -58,7 +64,7 @@ class Population:
             self.bots.pop(idx)
             if len(self.bots) <= 7:
                 print "Creating new Bots!"
-                neural_net_example = NeuralNet((1, 2, 4), ("sigmoid", "softmax"))
+                neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"))
                 colors = [(255,0,0), (0,255,0)]
                 for i in range(self.SIZE):
                     random_rgb = colors[np.random.randint(0, 2)]
@@ -75,6 +81,7 @@ class Population:
                     weakest = other
             self.eliminate(weakest)
         colors = [(255,0,0), (0,255,0)]
+        # asexual reproduction - mutation
         for i in range(num_to_replace):
             if np.random.uniform(0, 1) <= self.mutation_rate:
                 new_rgb = colors[np.random.randint(0,2)]
@@ -85,25 +92,39 @@ class Population:
                 nb_c = new_bot.nnet.get_all_weights()
                 mutated = False
                 while not mutated:
-                    # for k in range(len(nb_c)):
-                    #     print "len: ",len(nb_c)
-                    #     print "from: ",len(nb_c[k])
-                    #     print "to: ",len(nb_c[k][0])
-                    #     for i in range(len(nb_c[k])):
-                    #         for j in range(len(nb_c[k][0])):
-                    #             if np.random.uniform(0, 1) <= self.mutation_rate:
-                    #                 nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                    #                 mutated = True
                     for k in range(len(nb_c)):
-                        if np.random.uniform(0,1) <= self.mutation_rate:
-                            i = np.random.randint(0, len(nb_c[k]))
-                            j = np.random.randint(0, len(nb_c[k][0]))
-                            nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                            mutated = True
+                        print "len: ",len(nb_c)
+                        print "from: ",len(nb_c[k])
+                        print "to: ",len(nb_c[k][0])
+                        for i in range(len(nb_c[k])):
+                            for j in range(len(nb_c[k][0])):
+                                if np.random.uniform(0, 1) <= self.mutation_rate:
+                                    nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                                    mutated = True
+                    # for k in range(len(nb_c)):
+                    #     if np.random.uniform(0,1) <= self.mutation_rate:
+                    #         i = np.random.randint(0, len(nb_c[k]))
+                    #         j = np.random.randint(0, len(nb_c[k][0]))
+                    #         nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                    #         mutated = True
                 new_bot.nnet.set_all_weights(nb_c)
                 self.bots.append(new_bot)
+            # sexual - crossover
             else:
+                print "Sexual! :P"
+                sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
+                # get first 2 strongest bots
+                bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
+                conn1 = bot1.nnet.get_all_weights()
+                conn2 = bot2.nnet.get_all_weights()
+                # get random weight to crossover
+                idx1 = np.random.randint(len(conn1))
+                idx2 = np.random.randint(len(conn1[idx1]))
+                idx3 = np.random.randint(len(conn1[idx1][idx2]))
+                conn3 = conn1
+                conn3[idx1][idx2][idx3] = conn2[idx1][idx2][idx3]
                 new_bot = Bot(bot.nnet, bot.RGB, self)
+                new_bot.nnet.set_all_weights(conn3)
                 new_bot.x = bot.x + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
                 new_bot.y = bot.y + Bot.HITBOX_RADIUS * 4 * np.random.uniform(0, 1) * np.random.choice((-1, 1))
                 self.bots.append(new_bot)
@@ -130,23 +151,31 @@ class Population:
             min_theta = bot.theta - Bot.FIELD_OF_VISION_THETA / 2
             max_theta = bot.theta + Bot.FIELD_OF_VISION_THETA / 2
             food_in_sight = False
-            for food in self.food:
-                if angle_is_between(find_angle(bot.x, bot.y, food.x, food.y), min_theta, max_theta):
-                    food_in_sight = True
-                    break
-            if food_in_sight:
-                sensory_input.append(1.0)
-            else:
-                # version1 - check if bot in sight - eat that if it's there! :P
-                # idx = self.bots.index(bot)
-                # for bbot in self.bots:
-                #     if bot.RGB != bbot.RGB and self.bots.index(bbot) != idx and angle_is_between(find_angle(bot.x, bot.y, bbot.x, bbot.y), min_theta, max_theta):
-                #         food_in_sight = True
-                #         break
-                # if food_in_sight:
-                #     sensory_input.append(1.0)
-                # else:
+            # food for herbi_bots
+            if bot.RGB == (0,255,0):
+                for food in self.food:
+                    if angle_is_between(find_angle(bot.x, bot.y, food.x, food.y), min_theta, max_theta):
+                        food_in_sight = True
+                        break
+                if food_in_sight:
+                    sensory_input.append(1.0)
+                else:
+                    sensory_input.append(0.0)
                 sensory_input.append(0.0)
+            # carni_bot
+            elif bot.RGB == (255,0,0):
+                sensory_input.append(0.0)
+                food_in_sight = False
+                # version1 - check if bot in sight - eat that if it's there! :P
+                idx = self.bots.index(bot)
+                for bbot in self.bots:
+                    if bot.RGB != bbot.RGB and self.bots.index(bbot) != idx and angle_is_between(find_angle(bot.x, bot.y, bbot.x, bbot.y), min_theta, max_theta):
+                        food_in_sight = True
+                        break
+                if food_in_sight:
+                    sensory_input.append(1.0)
+                else:
+                    sensory_input.append(0.0)
 
             # Useful debugging outputs.
             #print(bot.RGB)
@@ -218,10 +247,12 @@ class Bot:
         Updates the bot's internals and handles bot<->bot collision.
         """
         # make them eat a certain period after spawning
-        if self.pop.time_since_last_death >= 100:
+        # print "pop time: ",self.pop.time_since_last_death
+        if self.pop.time_since_last_death >= 0.3:
             idx = self.pop.bots.index(self)
             for bbot in self.pop.bots:
                 if self.RGB != bbot.RGB and self.pop.bots.index(bbot) != idx and distance_between(self.x, self.y, bbot.x, bbot.y) <= Bot.HITBOX_RADIUS + Bot.HITBOX_RADIUS:
+                    herbi_bot = bbot if bbot.RGB == (0,255,0) else self
                     self.pop.feed(bbot, self, True)
                     break
 
@@ -259,7 +290,8 @@ class Food:
         """
         Updates the food's internals and handles bot<->food collision.
         """
+        # for herbi_bots
         for bot in self.pop.bots:
-            if distance_between(self.x, self.y, bot.x, bot.y) <= Bot.HITBOX_RADIUS + Food.HITBOX_RADIUS:
+            if bot.RGB == (0,255,0) and distance_between(self.x, self.y, bot.x, bot.y) <= Bot.HITBOX_RADIUS + Food.HITBOX_RADIUS:
                 self.pop.feed(bot, self)
                 break
