@@ -31,9 +31,9 @@ def main():
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
         # print "Using saved data!"
     else:
-        pop_size = 20
+        pop_size = 10
         mutation_rate = 0.5
-        no_food = 1
+        no_food = pop_size/2
         # while True:
         #     pop_size = int(input("Population size: "))
         #     if pop_size < 5:
@@ -99,6 +99,7 @@ def main():
         key_pressed = {"up": False, "down": False, "left": False, "right": False}
         for event in pg.event.get():
             if event.type == QUIT:
+                pop.save_strongest_bots()
                 pg.quit()
                 sys.exit()
             elif event.type == pg.KEYDOWN:

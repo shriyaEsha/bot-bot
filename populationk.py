@@ -8,6 +8,8 @@ import settings
 from utility import seq_is_equal, distance_between, angle_is_between, find_angle
 from neural_network import NeuralNet
 import h5py
+import os
+from keras.models import load_model
 
 class Population:
     """
@@ -30,7 +32,7 @@ class Population:
         # of the bot's direction and if there is or isn't food in the bots field
         # of vision. Output consists of whether or not to move foward, turn
         # left, turn right, or do nothing.
-        neural_net_example = NeuralNet((2, 3, 4), ("sigmoid", "softmax"))
+        neural_net_example = NeuralNet((2, 3, 3), ("sigmoid", "softmax"))
         colors = [(255,0,0), (0,255,0)]
         # spawning equal no of carni_bots and herbi_bots
         for i in range(size):
@@ -45,11 +47,16 @@ class Population:
         for i in range(no_food):
             self.food.append(Food(self))
 
+        # append strongest parents from previous run
+        if os.path.isfile("modelc.h5"):
+            self.bots.append(Bot(NeuralNet(model_file="modelc.h5"),(255,0,0), self))
+            self.bots.append(Bot(NeuralNet(model_file="modelh.h5"),(0,255,0), self))
+
     def eliminate(self, bot, replace = False):
         self.time_since_last_death = 0.0
         self.bots.remove(bot)
         color = bot.RGB 
-        neural_net_example = NeuralNet((2, 3, 4), ("sigmoid", "softmax"))
+        neural_net_example = NeuralNet((2, 3, 3), ("sigmoid", "softmax"))
 
         if replace:
             example_bot = Bot(neural_net_example, color, self)
@@ -67,7 +74,7 @@ class Population:
             self.bots.pop(idx)
             if len(self.bots) <= 7:
                 # # print "Creating new Bots!"
-                neural_net_example = NeuralNet((2, 3, 4), ("sigmoid", "softmax"))
+                neural_net_example = NeuralNet((2, 3, 3), ("sigmoid", "softmax"))
                 colors = [(255,0,0), (0,255,0)]
                 for i in range(self.SIZE):
                     random_rgb = colors[np.random.randint(0, 2)]
@@ -155,7 +162,7 @@ class Population:
             food.update(dt)
         colors = [(255,0,0), (0,255,0)]
         for bot in self.bots[:]:
-            if bot.RGB == (255,255,255) and self.time_since_last_death >= 0.26:
+            if bot.RGB == (255,255,255) and self.time_since_last_death >= 0.2:
                 idx = self.bots.index(bot)
                 self.bots[idx].RGB = colors[np.random.randint(2)]
             if bot not in self.bots:
@@ -218,15 +225,15 @@ class Bot:
     # In pixels/pixels per second/revolutions per second/radians.
     SPAWN_RADIUS = int(settings.WINDOW_WIDTH / 20) if settings.WINDOW_WIDTH <= settings.WINDOW_HEIGHT else int(settings.WINDOW_HEIGHT / 20)
     HITBOX_RADIUS = 5
-    SPEED = 50.0
+    SPEED = 10.0
     TURN_RATE = 2 * np.pi
     FIELD_OF_VISION_THETA = 45 * np.pi / 180
 
     # These lists represent the output from the neural network. Note that the
     # output '[0, 0, 0, 1]' means "do nothing".
-    MOVE_FORWARD =  [1, 0, 0, 0]
-    TURN_LEFT =     [0, 1, 0, 0]
-    TURN_RIGHT =    [0, 0, 1, 0]
+    MOVE_FORWARD =  [1, 0, 0]
+    TURN_LEFT =     [0, 1, 0]
+    TURN_RIGHT =    [0, 0, 1]
 
     def __init__(self, nnet, rgb, population):
         self.nnet = copy.deepcopy(nnet)

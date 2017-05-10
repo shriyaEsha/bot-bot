@@ -13,18 +13,20 @@ from keras.layers import Activation
 from keras.optimizers import SGD
 from keras.layers import Dense
 from keras.utils import np_utils
+from keras import initializers
 # fix random seed for reproducibility
-np.random.seed(7)
-
+np.random.seed()
 class NeuralNet:
-    def __init__(self, layers, activation_fns, bias = False):
-        
-        self.model = Sequential()
-        self.model.add(Dense(layers[0], input_dim=2, init="random_uniform", activation=activation_fns[0], use_bias=False))
-        self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
-        self.model.add(Dense(layers[2]))
-        self.model.add(Activation(activation_fns[1]))
-        self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+    def __init__(self, layers=None, activation_fns=None, model_file=None, bias = False):
+        if model_file != None:
+            self.model = load_model(model_file)
+        else:
+            self.model = Sequential()
+            self.model.add(Dense(layers[0], input_dim=2, init=initializers.RandomNormal(mean=0.0, stddev=0.05, seed=None), activation=activation_fns[0], use_bias=False))
+            self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
+            self.model.add(Dense(layers[2]))
+            self.model.add(Activation(activation_fns[1]))
+            self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
 
     def output(self, input):
         pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]
