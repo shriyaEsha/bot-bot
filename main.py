@@ -25,11 +25,11 @@ def main():
         periodically_save = True
     else:
         periodically_save = False
-    print periodically_save
+    # print periodically_save
     pop = None
     if periodically_save and os.path.isfile("save.txt"):# and input("Save file detected! Use it? (y/n): ").lower() == 'y':
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
-        print "Using saved data!"
+        # print "Using saved data!"
     else:
         pop_size = 20
         mutation_rate = 0.5
@@ -37,19 +37,19 @@ def main():
         # while True:
         #     pop_size = int(input("Population size: "))
         #     if pop_size < 5:
-        #         print("Population size must be at least 5!")
+        #         # print("Population size must be at least 5!")
         #     else:
         #         break
         # while True:
         #     mutation_rate = float(input("Mutation rate: "))
         #     if mutation_rate <= 0 or mutation_rate >= 1:
-        #         print("Mutation rate must be in the range (0, 1)!")
+        #         # print("Mutation rate must be in the range (0, 1)!")
         #     else:
         #         break
         # while True:
         #     settings.TIME_MULTIPLIER = float(input("Time multiplier: "))
         #     if settings.TIME_MULTIPLIER < 1:
-        #         print("Time multiplier must be at least 1!")
+        #         # print("Time multiplier must be at least 1!")
         #     else:
         #         break
         # adv = input("Advance options? (y/n): ")
@@ -57,19 +57,19 @@ def main():
         #     while True:
         #         settings.FPS = int(input("Frames per second: "))
         #         if settings.FPS < 1:
-        #             print("FPS must be at least 1!")
+        #             # print("FPS must be at least 1!")
         #         else:
         #             break
         #     while True:
         #         settings.WINDOW_WIDTH = int(input("Window width: "))
         #         if settings.WINDOW_WIDTH < 50:
-        #             print("Window width must be at least 50!")
+        #             # print("Window width must be at least 50!")
         #         else:
         #             break
         #     while True:
         #         settings.WINDOW_HEIGHT = int(input("Window height: "))
         #         if settings.WINDOW_HEIGHT < 50:
-        #             print("Window height must be at least 50!")
+        #             # print("Window height must be at least 50!")
         #         else:
         #             break
         pop = populationk.Population(pop_size, mutation_rate, no_food)
@@ -79,6 +79,7 @@ def main():
     print("\tPress 'r' to reset the populationk.")
     print("\tPress 'p' to pause / unpause.")
     print("\tPress 's' to save populationk's data (for use next time).")
+    print("\tPress 'q' to quit.")
     print("\tPress 'up' / 'down' to change the populationks mutation rate.")
     print("\tPress 'left' / 'right' to change the time multiplier.")
     print("\tClick on the screen to lay down food.")
@@ -107,6 +108,10 @@ def main():
                     pickle.dump([settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop], open("save.txt", "wb"))
                 if event.key == pg.K_p:
                     paused = not paused
+                if event.key == pg.K_q:
+                    pop.save_strongest_bots()
+                    pg.quit()
+                    sys.exit()
             elif event.type == pg.MOUSEBUTTONUP:
                 pos = pg.mouse.get_pos()
                 pop.food.pop(random.randint(0, len(pop.food)-1))
@@ -173,7 +178,7 @@ def render(window, FONT, pop):
 
     for bot in pop.bots:
         # Draw body.
-        print bot.RGB
+        # print bot.RGB
         pg.draw.circle(window, bot.RGB, (int(bot.x), int(bot.y)), bot.HITBOX_RADIUS)
 
         # Draw field-of-vision lines.

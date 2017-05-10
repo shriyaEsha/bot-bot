@@ -65,9 +65,9 @@ class Population:
                 mutated = False
                 while not mutated:
                     for k in range(len(nb_c)):
-                        print "len: ",len(nb_c)
-                        print "from: ",nb_c[k].FROM.SIZE
-                        print "to: ",nb_c[k].TO.SIZE
+                        # print "len: ",len(nb_c)
+                        # print "from: ",nb_c[k].FROM.SIZE
+                        # print "to: ",nb_c[k].TO.SIZE
                         raw_input()
                         for i in range(nb_c[k].FROM.SIZE):
                             for j in range(nb_c[k].TO.SIZE):
@@ -113,8 +113,8 @@ class Population:
                 sensory_input.append(0.0)
 
             # Useful debugging outputs.
-            print(bot.RGB)
-            print(sensory_input)
+            # print(bot.RGB)
+            # print(sensory_input)
 
             bot.update(dt, sensory_input)
 

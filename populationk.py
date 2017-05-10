@@ -99,8 +99,8 @@ class Population:
                         print "len: ",len(nb_c)
                         print "from: ",len(nb_c[k])
                         print "to: ",len(nb_c[k][0])
-                        for i in range(len(nb_c[k])):
-                            for j in range(len(nb_c[k][0])):
+                        for i in range(len(nb_c[k])-1):
+                            for j in range(len(nb_c[k][0])-1):
                                 if np.random.uniform(0, 1) <= self.mutation_rate:
                                     nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
                                     mutated = True
@@ -196,6 +196,10 @@ class Population:
                 if bot.score < weakest.score:
                     weakest = bot
             self.eliminate(weakest, replace = True)
+
+    def save_strongest_bots(self):
+        sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
+        sorted_bots_by_score[0].nnet.model.save("model.h5")
 
 class Bot:
     """

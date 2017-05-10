@@ -17,7 +17,7 @@ from keras.utils import np_utils
 np.random.seed(7)
 
 class NeuralNet:
-    def __init__(self, layers, activation_fns, bias = False):
+    def __init__(self, layers, activation_fns, t="c", bias = False):
         if os.path.isfile("model.h5"):
             self.model = load_model("model.h5")
         else:
@@ -30,10 +30,10 @@ class NeuralNet:
             self.model.save("model.h5")
 
     def output(self, input):
-        pred = self.model.predict(np.array(input))[0]
+        print "Input: ", np.array([np.array(input)]).reshape((1,2))
+        pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]
         # perform OHE on pred
         pred = [1 if i == max(pred) else 0 for i in pred]
-        # print pred
         # return pred
         return [1., 0, 0, 0]
 
