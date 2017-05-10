@@ -30,7 +30,7 @@ class Population:
         # of the bot's direction and if there is or isn't food in the bots field
         # of vision. Output consists of whether or not to move foward, turn
         # left, turn right, or do nothing.
-        neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "c")
+        neural_net_example = NeuralNet((2, 3, 4), ("sigmoid", "softmax"))
         colors = [(255,0,0), (0,255,0)]
         # spawning equal no of carni_bots and herbi_bots
         for i in range(size):
@@ -38,10 +38,9 @@ class Population:
             example_bot = Bot(neural_net_example, random_rgb, self)
             self.bots.append(example_bot)
 
-        # neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "h")
         for i in range(size):
             random_rgb = colors[1]
-            example_bot = Bot(neural_net_example.change_type("h"), random_rgb, self)
+            example_bot = Bot(neural_net_example, random_rgb, self)
             self.bots.append(example_bot)
         for i in range(no_food):
             self.food.append(Food(self))
@@ -49,13 +48,11 @@ class Population:
     def eliminate(self, bot, replace = False):
         self.time_since_last_death = 0.0
         self.bots.remove(bot)
-        colors = [(255,0,0), (0,255,0)]
-        neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "c")
+        color = bot.RGB 
+        neural_net_example = NeuralNet((2, 3, 4), ("sigmoid", "softmax"))
 
         if replace:
-            random_rgb = colors[np.random.randint(0, 2)]
-            t = "c" if random_rgb == (255,0,0) else "h"
-            example_bot = Bot(neural_net_example.change_type(t), random_rgb, self)
+            example_bot = Bot(neural_net_example, color, self)
             self.bots.append(example_bot)
 
     def feed(self, bot, food, is_bot=False):
@@ -70,13 +67,11 @@ class Population:
             self.bots.pop(idx)
             if len(self.bots) <= 7:
                 # # print "Creating new Bots!"
-                neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "c")
+                neural_net_example = NeuralNet((2, 3, 4), ("sigmoid", "softmax"))
                 colors = [(255,0,0), (0,255,0)]
                 for i in range(self.SIZE):
                     random_rgb = colors[np.random.randint(0, 2)]
-                    t = "c" if random_rgb == (255,0,0) else "h"
-                    # neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), t)
-                    example_bot = Bot(neural_net_example.change_type(t), random_rgb, self)
+                    example_bot = Bot(neural_net_example, random_rgb, self)
                     self.bots.append(example_bot)
 
         num_to_replace = int(self.SIZE / 7 - 1)
@@ -103,21 +98,21 @@ class Population:
                 nb_c = new_bot.nnet.get_all_weights()
                 mutated = False
                 while not mutated:
-                    for k in range(len(nb_c)-1):
-                        # # print "len: ",len(nb_c)
-                        # # print "from: ",len(nb_c[k])
-                        # # print "to: ",len(nb_c[k][0]-1)
-                        for i in range(len(nb_c[k])-1):
-                            for j in range(len(nb_c[k][0])):
-                                if np.random.uniform(0, 1) <= self.mutation_rate:
-                                    nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                                    mutated = True
-                    # for k in range(len(nb_c)):
-                    #     if np.random.uniform(0,1) <= self.mutation_rate:
-                    #         i = np.random.randint(0, len(nb_c[k]))
-                    #         j = np.random.randint(0, len(nb_c[k][0]))
-                    #         nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                    #         mutated = True
+                    # for k in range(len(nb_c)-1):
+                    #     # # print "len: ",len(nb_c)
+                    #     # # print "from: ",len(nb_c[k])
+                    #     # # print "to: ",len(nb_c[k][0]-1)
+                    #     for i in range(len(nb_c[k])-1):
+                    #         for j in range(len(nb_c[k][0])):
+                    #             if np.random.uniform(0, 1) <= self.mutation_rate:
+                    #                 nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                    #                 mutated = True
+                    for k in range(len(nb_c)):
+                        if np.random.uniform(0,1) <= self.mutation_rate:
+                            i = np.random.randint(0, len(nb_c[k]))
+                            j = np.random.randint(0, len(nb_c[k][0]))
+                            nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                            mutated = True
                 new_bot.nnet.set_all_weights(nb_c)
                 self.bots.append(new_bot)
                 self.bots[self.bots.index(new_bot)].RGB = (255,255,255)
@@ -128,7 +123,8 @@ class Population:
                 sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
                 # get first 2 strongest bots
                 bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
-                bot1.change_color((255,255,255))  
+                self.bots[self.bots.index(bot1)].change_color((255,255,255))  
+                self.bots[self.bots.index(bot2)].change_color((255,255,255))  
                 conn1 = bot1.nnet.get_all_weights()
                 conn2 = bot2.nnet.get_all_weights()
                 # get random weight to crossover
@@ -136,6 +132,8 @@ class Population:
                 idx2 = np.random.randint(len(conn1[idx1]))
                 idx3 = np.random.randint(len(conn1[idx1][idx2]))
                 conn3 = conn1
+                # print "booyah: ",conn3[idx1][idx2][idx3] , conn2[idx1][idx2][idx3]
+                # raw_input()
                 conn3[idx1][idx2][idx3] = conn2[idx1][idx2][idx3]
                 new_bot = Bot(bot.nnet, bot.RGB, self)
                 new_bot.nnet.set_all_weights(conn3)

@@ -17,51 +17,14 @@ from keras.utils import np_utils
 np.random.seed(7)
 
 class NeuralNet:
-    def __init__(self, layers, activation_fns, t, bias = False):
-        self.layers = layers
-        self.activation_fns = activation_fns
-        self.bias = bias
-        self.model = self.create_model_acc_type(t)
+    def __init__(self, layers, activation_fns, bias = False):
         
-
-        # if os.path.isfile("model.h5"):
-        #     self.model = load_model("model.h5")
-        # else:
-        #     self.model = Sequential()
-        #     self.model.add(Dense(layers[0], input_dim=2, init="random_uniform", activation=activation_fns[0], use_bias=False))
-        #     self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
-        #     self.model.add(Dense(layers[2]))
-        #     self.model.add(Activation(activation_fns[1]))
-        #     self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
-        #     self.model.save("model.h5")
-    def create_model_acc_type(self, t):
-        if t == 'c':
-            if os.path.isfile("modelc.h5"):
-                self.model = load_model("modelc.h5")
-            else:
-                self.model = Sequential()
-                self.model.add(Dense(self.layers[0], input_dim=2, init="random_uniform", activation=self.activation_fns[0], use_bias=False))
-                self.model.add(Dense(self.layers[1], init="random_uniform", activation=self.activation_fns[0]))
-                self.model.add(Dense(self.layers[2]))
-                self.model.add(Activation(self.activation_fns[1]))
-                self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
-                self.model.save("modelc.h5")
-        else:
-            if os.path.isfile("modelh.h5"):
-                self.model = load_model("modelh.h5")
-            else:
-                self.model = Sequential()
-                self.model.add(Dense(self.layers[0], input_dim=2, init="random_uniform", activation=self.activation_fns[0], use_bias=False))
-                self.model.add(Dense(self.layers[1], init="random_uniform", activation=self.activation_fns[0]))
-                self.model.add(Dense(self.layers[2]))
-                self.model.add(Activation(self.activation_fns[1]))
-                self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
-                self.model.save("modelh.h5")
-        return self.model
-
-    def change_type(self, type_):
-        self.model = self.create_model_acc_type(type_)
-        return self
+        self.model = Sequential()
+        self.model.add(Dense(layers[0], input_dim=2, init="random_uniform", activation=activation_fns[0], use_bias=False))
+        self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
+        self.model.add(Dense(layers[2]))
+        self.model.add(Activation(activation_fns[1]))
+        self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
 
     def output(self, input):
         pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]

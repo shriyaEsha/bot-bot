@@ -1,5 +1,5 @@
 """
-Bot Evolution v1.0.0
+Bot Evolution v1.1
 """
 
 import os
@@ -12,11 +12,11 @@ import datetime
 import settings
 import populationk
 import random 
-os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=cpu,floatX=float32"
+os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32"
 import theano
 
 def main():
-    np.random.seed(7)
+    np.random.seed()
     pg.init()
 
     # Initialize runtime variables.
@@ -33,7 +33,7 @@ def main():
     else:
         pop_size = 20
         mutation_rate = 0.5
-        no_food = 10
+        no_food = 1
         # while True:
         #     pop_size = int(input("Population size: "))
         #     if pop_size < 5:
