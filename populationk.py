@@ -7,6 +7,7 @@ import copy
 import settings
 from utility import seq_is_equal, distance_between, angle_is_between, find_angle
 from neural_network import NeuralNet
+import h5py
 
 class Population:
     """
@@ -29,7 +30,7 @@ class Population:
         # of the bot's direction and if there is or isn't food in the bots field
         # of vision. Output consists of whether or not to move foward, turn
         # left, turn right, or do nothing.
-        neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"))
+        neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "c")
         colors = [(255,0,0), (0,255,0)]
         # spawning equal no of carni_bots and herbi_bots
         for i in range(size):
@@ -37,9 +38,10 @@ class Population:
             example_bot = Bot(neural_net_example, random_rgb, self)
             self.bots.append(example_bot)
 
+        # neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "h")
         for i in range(size):
             random_rgb = colors[1]
-            example_bot = Bot(neural_net_example, random_rgb, self)
+            example_bot = Bot(neural_net_example.change_type("h"), random_rgb, self)
             self.bots.append(example_bot)
         for i in range(no_food):
             self.food.append(Food(self))
@@ -48,27 +50,33 @@ class Population:
         self.time_since_last_death = 0.0
         self.bots.remove(bot)
         colors = [(255,0,0), (0,255,0)]
+        neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "c")
+
         if replace:
             random_rgb = colors[np.random.randint(0, 2)]
-            self.bots.append(Bot(NeuralNet((2, 5, 4), ("sigmoid", "softmax")), random_rgb, self))
+            t = "c" if random_rgb == (255,0,0) else "h"
+            example_bot = Bot(neural_net_example.change_type(t), random_rgb, self)
+            self.bots.append(example_bot)
 
     def feed(self, bot, food, is_bot=False):
         bot.score = 1.0
         if is_bot == False:
-            print "Bot-Food collision"
+            # # print "Bot-Food collision"
             self.food.remove(food)
             self.food.append(Food(self))
         else: # bot-bot collision
-            print "Bot-Bot collision"
+            # # print "Bot-Bot collision"
             idx = self.bots.index(bot)
             self.bots.pop(idx)
             if len(self.bots) <= 7:
-                print "Creating new Bots!"
-                neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"))
+                # # print "Creating new Bots!"
+                neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), "c")
                 colors = [(255,0,0), (0,255,0)]
                 for i in range(self.SIZE):
                     random_rgb = colors[np.random.randint(0, 2)]
-                    example_bot = Bot(neural_net_example, random_rgb, self)
+                    t = "c" if random_rgb == (255,0,0) else "h"
+                    # neural_net_example = NeuralNet((2, 5, 4), ("sigmoid", "softmax"), t)
+                    example_bot = Bot(neural_net_example.change_type(t), random_rgb, self)
                     self.bots.append(example_bot)
 
         num_to_replace = int(self.SIZE / 7 - 1)
@@ -95,12 +103,12 @@ class Population:
                 nb_c = new_bot.nnet.get_all_weights()
                 mutated = False
                 while not mutated:
-                    for k in range(len(nb_c)):
-                        print "len: ",len(nb_c)
-                        print "from: ",len(nb_c[k])
-                        print "to: ",len(nb_c[k][0])
+                    for k in range(len(nb_c)-1):
+                        # # print "len: ",len(nb_c)
+                        # # print "from: ",len(nb_c[k])
+                        # # print "to: ",len(nb_c[k][0]-1)
                         for i in range(len(nb_c[k])-1):
-                            for j in range(len(nb_c[k][0])-1):
+                            for j in range(len(nb_c[k][0])):
                                 if np.random.uniform(0, 1) <= self.mutation_rate:
                                     nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
                                     mutated = True
@@ -116,7 +124,7 @@ class Population:
 
             # sexual - crossover
             else:
-                print "Sexual! :P"
+                # # print "Sexual! :P"
                 sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
                 # get first 2 strongest bots
                 bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
@@ -185,8 +193,8 @@ class Population:
                 sensory_input.append(0.0)
 
             # Useful debugging outputs.
-            # print(bot.RGB)
-            # print(sensory_input)
+            # # # print(bot.RGB)
+            # # # print(sensory_input)
 
             bot.update(dt, sensory_input)
 
@@ -198,8 +206,11 @@ class Population:
             self.eliminate(weakest, replace = True)
 
     def save_strongest_bots(self):
-        sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
-        sorted_bots_by_score[0].nnet.model.save("model.h5")
+        sorted_bots_by_scorec = sorted((bot for bot in self.bots if bot.RGB == (255,0,0)), key=lambda x: x.score, reverse = True)
+        sorted_bots_by_scoreh = sorted((bot for bot in self.bots if bot.RGB == (0,255,0)), key=lambda x: x.score, reverse = True)
+        sorted_bots_by_scorec[0].nnet.model.save("modelc.h5")
+        sorted_bots_by_scoreh[0].nnet.model.save("modelh.h5")
+
 
 class Bot:
     """
@@ -221,6 +232,7 @@ class Bot:
 
     def __init__(self, nnet, rgb, population):
         self.nnet = copy.deepcopy(nnet)
+        # print "NNet: ",self.nnet, "rgb: ",rgb
         self.RGB = rgb
         self.pop = population
         self.theta = np.random.uniform(0, 1) * 2 * np.pi
@@ -264,7 +276,7 @@ class Bot:
         Updates the bot's internals and handles bot<->bot collision.
         """
         # make them eat a certain period after spawning
-        # print "pop time: ",self.pop.time_since_last_death
+        # # # print "pop time: ",self.pop.time_since_last_death
         if self.pop.time_since_last_death >= 0.3:
             idx = self.pop.bots.index(self)
             for bbot in self.pop.bots:
@@ -275,6 +287,7 @@ class Bot:
 
         # neural network - feedforward
         # self.nnet.feed_forward(sensory_input)
+        # print "Model before output: ",self.nnet
         output = self.nnet.output(sensory_input)
         if seq_is_equal(output, Bot.MOVE_FORWARD):
             self._move_forward(dt)

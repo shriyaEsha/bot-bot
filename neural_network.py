@@ -17,33 +17,65 @@ from keras.utils import np_utils
 np.random.seed(7)
 
 class NeuralNet:
-    def __init__(self, layers, activation_fns, t="c", bias = False):
-        if os.path.isfile("model.h5"):
-            self.model = load_model("model.h5")
+    def __init__(self, layers, activation_fns, t, bias = False):
+        self.layers = layers
+        self.activation_fns = activation_fns
+        self.bias = bias
+        self.model = self.create_model_acc_type(t)
+        
+
+        # if os.path.isfile("model.h5"):
+        #     self.model = load_model("model.h5")
+        # else:
+        #     self.model = Sequential()
+        #     self.model.add(Dense(layers[0], input_dim=2, init="random_uniform", activation=activation_fns[0], use_bias=False))
+        #     self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
+        #     self.model.add(Dense(layers[2]))
+        #     self.model.add(Activation(activation_fns[1]))
+        #     self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+        #     self.model.save("model.h5")
+    def create_model_acc_type(self, t):
+        if t == 'c':
+            if os.path.isfile("modelc.h5"):
+                self.model = load_model("modelc.h5")
+            else:
+                self.model = Sequential()
+                self.model.add(Dense(self.layers[0], input_dim=2, init="random_uniform", activation=self.activation_fns[0], use_bias=False))
+                self.model.add(Dense(self.layers[1], init="random_uniform", activation=self.activation_fns[0]))
+                self.model.add(Dense(self.layers[2]))
+                self.model.add(Activation(self.activation_fns[1]))
+                self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+                self.model.save("modelc.h5")
         else:
-            self.model = Sequential()
-            self.model.add(Dense(layers[0], input_dim=2, init="random_uniform", activation=activation_fns[0], use_bias=False))
-            self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
-            self.model.add(Dense(layers[2]))
-            self.model.add(Activation(activation_fns[1]))
-            self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
-            self.model.save("model.h5")
+            if os.path.isfile("modelh.h5"):
+                self.model = load_model("modelh.h5")
+            else:
+                self.model = Sequential()
+                self.model.add(Dense(self.layers[0], input_dim=2, init="random_uniform", activation=self.activation_fns[0], use_bias=False))
+                self.model.add(Dense(self.layers[1], init="random_uniform", activation=self.activation_fns[0]))
+                self.model.add(Dense(self.layers[2]))
+                self.model.add(Activation(self.activation_fns[1]))
+                self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+                self.model.save("modelh.h5")
+        return self.model
+
+    def change_type(self, type_):
+        self.model = self.create_model_acc_type(type_)
+        return self
 
     def output(self, input):
-        print "Input: ", np.array([np.array(input)]).reshape((1,2))
         pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]
-        # perform OHE on pred
         pred = [1 if i == max(pred) else 0 for i in pred]
-        # return pred
-        return [1., 0, 0, 0]
+        return pred
+        # return [1., 0, 0, 0]
 
 
     def get_all_weights(self):
         # need weights of layers 1 & 2 - everything except first and last
         w = []
-        print "No of layers: ", len(self.model.layers)
+        # # print "No of layers: ", len(self.model.layers)
         for i in xrange(1,len(self.model.layers)-1):
-            print self.model.layers[i].get_weights()
+            # # print self.model.layers[i].get_weights()
             w.append(self.model.layers[i].get_weights())
         return w
 
