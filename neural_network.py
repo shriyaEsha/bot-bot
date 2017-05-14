@@ -2,52 +2,124 @@
 This module implements the neural network class and all components necessary to
 modularize the build/use process of the neural network.
 """
-
 import numpy as np
 import pickle
 import os
 import h5py
 # create NN using Keras
-from keras.models import Sequential, load_model
-from keras.layers import Activation
-from keras.optimizers import SGD
-from keras.layers import Dense
-from keras.utils import np_utils
-from keras import initializers
+# from keras.models import Sequential, load_model
+# from keras.layers import Activation
+# from keras.optimizers import SGD
+# from keras.layers import Dense
+# from keras.utils import np_utils
+# import keras
+import tensorflow as tf
 # fix random seed for reproducibility
-np.random.seed()
-class NeuralNet:
-    def __init__(self, layers=None, activation_fns=None, model_file=None, bias = False):
-        if model_file != None:
-            self.model = load_model(model_file)
-        else:
-            self.model = Sequential()
-            self.model.add(Dense(layers[0], input_dim=2, init=initializers.RandomNormal(mean=0.0, stddev=0.05, seed=None), activation=activation_fns[0], use_bias=False))
-            self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
-            self.model.add(Dense(layers[2]))
-            self.model.add(Activation(activation_fns[1]))
-            self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+# np.random.seed(7)
+
+class NNetwork:
+    def __init__(self, layers, activation_fns, model_file=None, bias = False, name = ''):
+        # self.model = Sequential()
+        # w1 = keras.initializers.RandomNormal(mean=0, stddev=1, seed=None)
+        # w2 = keras.initializers.RandomNormal(mean=0, stddev=1, seed=None)
+        # self.model.add(Dense(layers[0], input_dim=2, init=w1, activation=activation_fns[0],  use_bias=False ))
+        # self.model.add(Dense(layers[1], init=w2, activation=activation_fns[0], use_bias=False))
+        # self.model.add(Dense(layers[2]))
+        # self.model.add(Activation(activation_fns[1]))
+        # self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+        print 'Initializing'
+        self.input = tf.placeholder(tf.float32, shape=[None, layers[0]])
+        self.w1 = tf.Variable(tf.random_normal([layers[0], layers[1]], ))
+        self.w2 = tf.Variable(tf.random_normal([layers[1], layers[2]], ))
+        self.layer1 = tf.sigmoid(tf.matmul(self.input, self.w1))
+        self.layer2 = tf.sigmoid(tf.matmul(self.layer1, self.w2))
+        self.op = tf.nn.softmax(self.layer2)
+        self.session = tf.Session()
+        self.init = tf.variables_initializer([self.w1, self.w2])
+        self.session.run(self.init)
+        self.name = name
+        print 'Weights : '+str(self.get_all_weights())
 
     def output(self, input):
-        pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]
+        # pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]
+        # print input
+        pred = self.session.run(self.op, {self.input: [input]})[0]        
+        pred1 = pred
         pred = [1 if i == max(pred) else 0 for i in pred]
+        print self.name + str(pred) + str(pred1) + str(input)
         return pred
         # return [1., 0, 0, 0]
+
+    def reset(self):
+        self.session.run(self.init)
 
 
     def get_all_weights(self):
         # need weights of layers 1 & 2 - everything except first and last
         w = []
         # # print "No of layers: ", len(self.model.layers)
-        for i in xrange(1,len(self.model.layers)-1):
+        w.append(self.w1.eval(session = self.session))
+        w.append(self.w2.eval(session = self.session))
+        # for i in xrange(1,len(self.model.layers)-1):
             # # print self.model.layers[i].get_weights()
-            w.append(self.model.layers[i].get_weights())
+            # w.append(self.model.layers[i].get_weights())
         return w
 
     def set_all_weights(self, weights):
-        for i in xrange(1,len(self.model.layers)-1):
+        # pass
+        print weights
+        self.session.run(tf.assign(self.w1, weights[0]))
+        self.session.run(tf.assign(self.w2, weights[1]))
+        # for i in xrange(1,len(self.model.layers)-1):
             # w = np.array(weights[i-1])
-            self.model.layers[i].set_weights(weights[i-1])
+            # self.model.layers[i].set_weights(weights[i-1])
+
+
+# import numpy as np
+# import pickle
+# import os
+# import h5py
+# # create NN using Keras
+# from keras.models import Sequential, load_model
+# from keras.layers import Activation
+# from keras.optimizers import SGD
+# from keras.layers import Dense
+# from keras.utils import np_utils
+# from keras import initializers
+# # fix random seed for reproducibility
+# np.random.seed()
+# class NeuralNet:
+#     def __init__(self, layers=None, activation_fns=None, model_file=None, bias = False):
+#         if model_file != None:
+#             self.model = load_model(model_file)
+#         else:
+#             self.model = Sequential()
+#             self.model.add(Dense(layers[0], input_dim=2, init=initializers.RandomNormal(mean=0.0, stddev=0.2, seed=None), activation=activation_fns[0], use_bias=False))
+#             self.model.add(Dense(layers[1], init="random_uniform", activation=activation_fns[0]))
+#             self.model.add(Dense(layers[2]))
+#             self.model.add(Activation(activation_fns[1]))
+#             self.model.compile(loss='mean_squared_error', optimizer='rmsprop')
+
+#     def output(self, input):
+#         pred = self.model.predict(np.array([np.array(input)]).reshape((1,2)))[0]
+#         pred = [1 if i == max(pred) else 0 for i in pred]
+#         return pred
+#         # return [1., 0, 0, 0]
+
+
+#     def get_all_weights(self):
+#         # need weights of layers 1 & 2 - everything except first and last
+#         w = []
+#         # # print "No of layers: ", len(self.model.layers)
+#         for i in xrange(1,len(self.model.layers)-1):
+#             # # print self.model.layers[i].get_weights()
+#             w.append(self.model.layers[i].get_weights())
+#         return w
+
+#     def set_all_weights(self, weights):
+#         for i in xrange(1,len(self.model.layers)-1):
+#             # w = np.array(weights[i-1])
+#             self.model.layers[i].set_weights(weights[i-1])
 
 
 # class NNetwork:

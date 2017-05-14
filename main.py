@@ -1,5 +1,5 @@
 """
-Bot Evolution v1.1
+Bot Evolution v1.0.0
 """
 
 import os
@@ -10,77 +10,67 @@ from pygame.locals import *
 import numpy as np
 import datetime
 import settings
-import populationk
-import random 
-os.environ["THEANO_FLAGS"] = "mode=FAST_RUN,device=gpu,floatX=float32"
-import theano
+import population
 
 def main():
     np.random.seed()
     pg.init()
 
     # Initialize runtime variables.
-    periodically_save = raw_input("Use saved data?")
-    if periodically_save.lower() in ("y", "yes"):
-        periodically_save = True
-    else:
-        periodically_save = False
-    # print periodically_save
+    periodically_save = False
     pop = None
-    if periodically_save and os.path.isfile("save.txt"):# and input("Save file detected! Use it? (y/n): ").lower() == 'y':
+    if os.path.isfile("save.txt") and periodically_save:
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
-        # print "Using saved data!"
     else:
         pop_size = 10
         mutation_rate = 0.5
-        no_food = pop_size/2
+        no_food = 5
         # while True:
-        #     pop_size = int(input("Population size: "))
+        #     pop_size = int(raw_input("Population size: "))
         #     if pop_size < 5:
-        #         # print("Population size must be at least 5!")
+        #         print("Population size must be at least 5!")
         #     else:
         #         break
         # while True:
-        #     mutation_rate = float(input("Mutation rate: "))
+        #     mutation_rate = float(raw_input("Mutation rate: "))
         #     if mutation_rate <= 0 or mutation_rate >= 1:
-        #         # print("Mutation rate must be in the range (0, 1)!")
+        #         print("Mutation rate must be in the range (0, 1)!")
         #     else:
         #         break
         # while True:
-        #     settings.TIME_MULTIPLIER = float(input("Time multiplier: "))
+        #     settings.TIME_MULTIPLIER = float(raw_input("Time multiplier: "))
         #     if settings.TIME_MULTIPLIER < 1:
-        #         # print("Time multiplier must be at least 1!")
+        #         print("Time multiplier must be at least 1!")
         #     else:
         #         break
-        # adv = input("Advance options? (y/n): ")
-        # if adv == "y":
+        # if raw_input("Advance options? (y/n): ").lower() == 'y':
         #     while True:
-        #         settings.FPS = int(input("Frames per second: "))
+        #         settings.FPS = int(raw_input("Frames per second: "))
         #         if settings.FPS < 1:
-        #             # print("FPS must be at least 1!")
+        #             print("FPS must be at least 1!")
         #         else:
         #             break
         #     while True:
-        #         settings.WINDOW_WIDTH = int(input("Window width: "))
+        #         settings.WINDOW_WIDTH = int(raw_input("Window width: "))
         #         if settings.WINDOW_WIDTH < 50:
-        #             # print("Window width must be at least 50!")
+        #             print("Window width must be at least 50!")
         #         else:
         #             break
         #     while True:
-        #         settings.WINDOW_HEIGHT = int(input("Window height: "))
+        #         settings.WINDOW_HEIGHT = int(raw_input("Window height: "))
         #         if settings.WINDOW_HEIGHT < 50:
-        #             # print("Window height must be at least 50!")
+        #             print("Window height must be at least 50!")
         #         else:
         #             break
-        pop = populationk.Population(pop_size, mutation_rate, no_food)
-    # if input("Periodically save every half hour? (y/n): ").lower() == 'y':
-    # periodically_save = True
+    pop = population.Population(pop_size, mutation_rate, no_food)
+    # if raw_input("Periodically save every half hour? (y/n): ").lower() == 'y':
+    #     periodically_save = True
     print("\nNote: ")
-    print("\tPress 'r' to reset the populationk.")
+    print("\tPress 'r' to reset the population.")
     print("\tPress 'p' to pause / unpause.")
-    print("\tPress 's' to save populationk's data (for use next time).")
-    print("\tPress 'q' to quit.")
-    print("\tPress 'up' / 'down' to change the populationks mutation rate.")
+    print("\tPress 'q' to QUIT.")
+    print("\tPress 's' to save population's data (for use next time).")
+    print("\tPress 'up' / 'down' to change the populations mutation rate.")
     print("\tPress 'left' / 'right' to change the time multiplier.")
     print("\tClick on the screen to lay down food.")
 
@@ -99,12 +89,11 @@ def main():
         key_pressed = {"up": False, "down": False, "left": False, "right": False}
         for event in pg.event.get():
             if event.type == QUIT:
-                pop.save_strongest_bots()
                 pg.quit()
                 sys.exit()
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_r:
-                    pop = populationk.Population(pop.SIZE, pop.mutation_rate)
+                    pop = population.Population(pop.SIZE, pop.mutation_rate)
                 if event.key == pg.K_s:
                     pickle.dump([settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop], open("save.txt", "wb"))
                 if event.key == pg.K_p:
@@ -115,8 +104,8 @@ def main():
                     sys.exit()
             elif event.type == pg.MOUSEBUTTONUP:
                 pos = pg.mouse.get_pos()
-                pop.food.pop(random.randint(0, len(pop.food)-1))
-                food = populationk.Food(pop)
+                pop.food.pop()
+                food = population.Food(pop)
                 food.x = pos[0]
                 food.y = pos[1]
                 pop.food.append(food)
@@ -171,6 +160,7 @@ def update(dt, pop, key_pressed):
         display_time_remaining -= 1.0 / settings.FPS * dt
         if display_time_remaining < 0:
             display_time_remaining = 0.0
+
     pop.update(dt)
 
 def render(window, FONT, pop):
@@ -179,7 +169,6 @@ def render(window, FONT, pop):
 
     for bot in pop.bots:
         # Draw body.
-        # print bot.RGB
         pg.draw.circle(window, bot.RGB, (int(bot.x), int(bot.y)), bot.HITBOX_RADIUS)
 
         # Draw field-of-vision lines.
