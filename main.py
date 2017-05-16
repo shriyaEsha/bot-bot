@@ -114,6 +114,8 @@ def main():
             continue
         if periodically_save and datetime.datetime.now().minute % 30 == 0:
             pickle.dump([settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop], open("save.txt", "wb"))
+        
+
         keys = pg.key.get_pressed()
         if keys[pg.K_UP]:
             key_pressed["up"] = True

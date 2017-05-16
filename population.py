@@ -67,6 +67,43 @@ class Population:
             # random_rgb = (np.random.randint(30, 256), np.random.randint(30, 256), np.random.randint(30, 256))
             self.bots.append(Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), bot.RGB, self))
 
+    def crossover(self):
+        sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
+        # get first 2 strongest bots
+        bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
+        conn1 = bot1.nnet.get_all_weights()
+        conn2 = bot2.nnet.get_all_weights()
+        conn3 = conn1
+        idx1 = np.random.randint(2)
+        idx2 = np.random.randint(2)
+        if np.random.uniform(0, 1) <= self.mutation_rate:
+             conn3[0][idx1][idx2] = conn1[0][idx1][idx2]
+        else:
+             conn3[0][idx1][idx2] = conn2[0][idx1][idx2]
+        bot1.nnet.set_all_weights(conn3)
+        self.bots.append(bot1)
+
+    def mutation(self, bot):
+        mutated = False
+        nb_c = bot.nnet.get_all_weights()
+        while not mutated:
+            # for k in range(len(nb_c)):
+            #     for i in range(len(nb_c[k])-1):
+            #         for j in range(len(nb_c[k][i])):
+            #             if np.random.uniform(0, 1) <= self.mutation_rate:
+            #                 nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+            #                 mutated = True
+            #                 print "Mutated!!"
+            # no of hidden units
+            for k in range(2):
+                if np.random.uniform(0, 1) <= self.mutation_rate:
+                    idx1 = np.random.randint(2)
+                    idx2 = np.random.randint(2)
+                    nb_c[0][idx1][idx2] = nb_c[0][idx1][idx2] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                    mutated = True
+                    bot.nnet.set_all_weights(nb_c)
+        return bot
+
     def feed(self, bot, food, is_bot = False):
         print "Feeding..."
         bot.score += 1.0
@@ -91,40 +128,9 @@ class Population:
                 # new_bot = Bot(bot.nnet, rgb, self)
                 bot.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
                 bot.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
-                nb_c = bot.nnet.get_all_weights()
-                mutated = False
-                while not mutated:
-                    # for k in range(len(nb_c)):
-                    #     for i in range(len(nb_c[k])-1):
-                    #         for j in range(len(nb_c[k][i])):
-                    #             if np.random.uniform(0, 1) <= self.mutation_rate:
-                    #                 nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                    #                 mutated = True
-                    #                 print "Mutated!!"
-                    # no of hidden units
-                    for k in range(2):
-                        if np.random.uniform(0, 1) <= self.mutation_rate:
-                            idx1 = np.random.randint(2)
-                            idx2 = np.random.randint(2)
-                            nb_c[0][idx1][idx2] = nb_c[0][idx1][idx2] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                            mutated = True
-                            bot.nnet.set_all_weights(nb_c)
-                self.bots.append(bot)
+                bot = self.mutation(bot)
             else:
-                sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
-                # get first 2 strongest bots
-                bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
-                conn1 = bot1.nnet.get_all_weights()
-                conn2 = bot2.nnet.get_all_weights()
-                conn3 = conn1
-                idx1 = np.random.randint(2)
-                idx2 = np.random.randint(2)
-                if np.random.uniform(0, 1) <= self.mutation_rate:
-                     conn3[0][idx1][idx2] = conn1[0][idx1][idx2]
-                else:
-                     conn3[0][idx1][idx2] = conn2[0][idx1][idx2]
-                bot1.nnet.set_all_weights(conn3)
-                self.bots.append(bot1)
+                self.crossover()
 
         print "FED BOT!!!"
 
@@ -252,7 +258,7 @@ class Bot:
     # In pixels/pixels per second/revolutions per second/radians.
     SPAWN_RADIUS = int(settings.WINDOW_WIDTH / 20) if settings.WINDOW_WIDTH <= settings.WINDOW_HEIGHT else int(settings.WINDOW_HEIGHT / 20)
     HITBOX_RADIUS = 6
-    SPEED = 80.0
+    SPEED = 250.0
     SPEED_H = 0.9 * SPEED
     TURN_RATE = 2 * np.pi
     FIELD_OF_VISION_THETA = 45 * np.pi / 180
@@ -311,27 +317,31 @@ class Bot:
         self.score -= 1.0 / settings.FPS / 10.0 * dt * settings.TIME_MULTIPLIER
         if self.score < -1:
             self.score = -1.0
+            self.HITBOX_RADIUS = 10
+            # self = self.pop.mutation(self)
+        else:
+            self.HITBOX_RADIUS = 6
 
         no_herbibots = len(list(bot for bot in self.pop.bots if bot.RGB == GREEN))
         no_carnibots = len(list(bot for bot in self.pop.bots if bot.RGB == RED))
-        if no_herbibots < 5:
+        if no_herbibots < 2:
             self.pop.create_herbibots()
-        if no_carnibots < 5:
+        if no_carnibots < 2:
             self.pop.create_carnibots()
         
         # randomly mutate weights of bots!
-            if np.random.uniform(0, 1) <= self.pop.mutation_rate:
-                bot = self.pop.bots[np.random.randint(len(self.bots))]
-                rgb = colors[np.random.randint(2)]
-                # new_bot.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
-                # new_bot.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
-                nb_c = bot.nnet.get_all_weights()
-                mutated = False
-                k = np.random.randint(len(nb_c))
-                i = np.random.randint(len(nb_c[k]-1))
-                j = np.random.randint(len(nb_c[k][i]-1))
-                nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                bot.nnet.set_all_weights(nb_c)
+            # if np.random.uniform(0, 1) <= self.pop.mutation_rate:
+            #     bot = self.pop.bots[np.random.randint(len(self.bots))]
+            #     rgb = colors[np.random.randint(2)]
+            #     # new_bot.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
+            #     # new_bot.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
+            #     nb_c = bot.nnet.get_all_weights()
+            #     mutated = False
+            #     k = np.random.randint(len(nb_c))
+            #     i = np.random.randint(len(nb_c[k]-1))
+            #     j = np.random.randint(len(nb_c[k][i]-1))
+            #     nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+            #     bot.nnet.set_all_weights(nb_c)
         
 
         if self.pop.time_since_last_death >= 0.2:
