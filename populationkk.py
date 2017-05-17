@@ -10,17 +10,11 @@ import settings
 from utility import seq_is_equal, distance_between, angle_is_between, find_angle
 from neural_network import NNetwork
 
-# Q-learning stuff
-from qlearn import QLearn
-from collections import deque
-
-
 np.random.seed()
 
 RED = (255,0,0)
 GREEN = (0,255,0)
 colors = [RED, GREEN]
-
 class Population:
     """
     The environment of bots and food.
@@ -43,13 +37,10 @@ class Population:
         # of vision. Output consists of whether or not to move foward, turn
         # left, turn right, or do nothing.
         for i in range(size):
-            # self.bots.append(Bot(qnetwork((2, 2, 4), ("sigmoid", "softmax")), RED, self))
-            self.bots.append(Bot(None, RED, self, QLearn((2, 2, 4), ("sigmoid", "softmax"))))
+            self.bots.append(Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), RED, self))
 
         for i in range(size):
-            self.bots.append(Bot(None, GREEN, self, QLearn((2, 2, 4), ("sigmoid", "softmax"))))
-            # self.bots.append(Bot(QLearn((2, 2, 4), ("sigmoid", "softmax")), GREEN, self))
-
+            self.bots.append(Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), GREEN, self))
         for i in range(no_food):
             self.food.append(Food(self))
 
@@ -58,14 +49,14 @@ class Population:
             f = open("modelc.pickle")
             wts = pickle.load(f)
             f.close()
-            bot = Bot(None, RED, self, QLearn((2, 2, 4), ("sigmoid", "softmax")))
-            bot.qnet.set_all_weights(wts)
+            bot = Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), RED, self)
+            bot.nnet.set_all_weights(wts)
             self.bots.append(bot)
             f = open("modelh.pickle")
             wts = pickle.load(f)
             f.close()
-            bot = Bot(None, GREEN, self, QLearn((2, 2, 4), ("sigmoid", "softmax")))
-            bot.qnet.set_all_weights(wts)
+            bot = Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), GREEN, self)
+            bot.nnet.set_all_weights(wts)
             self.bots.append(bot)
 
     def eliminate(self, bot, replace = False):
@@ -74,46 +65,7 @@ class Population:
             self.bots.remove(bot)
         if replace:
             # random_rgb = (np.random.randint(30, 256), np.random.randint(30, 256), np.random.randint(30, 256))
-            print "Init New Network!"
-            self.bots.append(Bot(None, bot.RGB, self, QLearn((2, 2, 4), ("sigmoid", "softmax"))))
-            # self.bots.append(Bot(QLearn((2, 2, 4), ("sigmoid", "softmax")), bot.RGB, self))
-
-    def crossover(self):
-        sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
-        # get first 2 strongest bots
-        bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
-        conn1 = bot1.qnet.get_all_weights()
-        conn2 = bot2.qnet.get_all_weights()
-        conn3 = conn1
-        idx1 = np.random.randint(1)
-        idx2 = np.random.randint(1)
-        if np.random.uniform(0, 1) <= self.mutation_rate:
-             conn3[0][idx1][idx2] = conn1[0][idx1][idx2]
-        else:
-             conn3[0][idx1][idx2] = conn2[0][idx1][idx2]
-        bot1.qnet.set_all_weights(conn3)
-        self.bots.append(bot1)
-
-    def mutation(self, bot):
-        mutated = False
-        nb_c = bot.qnet.get_all_weights()
-        while not mutated:
-            # for k in range(len(nb_c)):
-            #     for i in range(len(nb_c[k])-1):
-            #         for j in range(len(nb_c[k][i])):
-            #             if np.random.uniform(0, 1) <= self.mutation_rate:
-            #                 nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-            #                 mutated = True
-            #                 print "Mutated!!"
-            # no of hidden units
-            for k in range(2):
-                if np.random.uniform(0, 1) <= self.mutation_rate:
-                    idx1 = np.random.randint(1)
-                    idx2 = np.random.randint(1)
-                    nb_c[0][idx1][idx2] = nb_c[0][idx1][idx2] * np.random.normal(1, 0.5) + np.random.standard_normal()
-                    mutated = True
-                    bot.qnet.set_all_weights(nb_c)
-        return bot
+            self.bots.append(Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), bot.RGB, self))
 
     def feed(self, bot, food, is_bot = False):
         print "Feeding..."
@@ -136,42 +88,55 @@ class Population:
             print "Replacing!!"
             if np.random.uniform(0, 1) <= self.mutation_rate:
                 rgb = GREEN if is_bot else colors[np.random.randint(2)]
-                # new_bot = Bot(bot.qnet, rgb, self)
+                # new_bot = Bot(bot.nnet, rgb, self)
                 bot.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
                 bot.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
-                bot = self.mutation(bot)
+                nb_c = bot.nnet.get_all_weights()
+                mutated = False
+                while not mutated:
+                    # for k in range(len(nb_c)):
+                    #     for i in range(len(nb_c[k])-1):
+                    #         for j in range(len(nb_c[k][i])):
+                    #             if np.random.uniform(0, 1) <= self.mutation_rate:
+                    #                 nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                    #                 mutated = True
+                    #                 print "Mutated!!"
+                    # no of hidden units
+                    for k in range(2):
+                        if np.random.uniform(0, 1) <= self.mutation_rate:
+                            idx1 = np.random.randint(2)
+                            idx2 = np.random.randint(2)
+                            nb_c[0][idx1][idx2] = nb_c[0][idx1][idx2] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                            mutated = True
+                            bot.nnet.set_all_weights(nb_c)
+                self.bots.append(bot)
             else:
-                self.crossover()
+                sorted_bots_by_score = sorted(self.bots, key=lambda x: x.score, reverse = True)
+                # get first 2 strongest bots
+                bot1, bot2 = sorted_bots_by_score[0], sorted_bots_by_score[1]
+                conn1 = bot1.nnet.get_all_weights()
+                conn2 = bot2.nnet.get_all_weights()
+                conn3 = conn1
+                idx1 = np.random.randint(2)
+                idx2 = np.random.randint(2)
+                if np.random.uniform(0, 1) <= self.mutation_rate:
+                     conn3[0][idx1][idx2] = conn1[0][idx1][idx2]
+                else:
+                     conn3[0][idx1][idx2] = conn2[0][idx1][idx2]
+                bot1.nnet.set_all_weights(conn3)
+                self.bots.append(bot1)
 
         print "FED BOT!!!"
 
     def create_herbibots(self):
-        bot = self.bots[0]
-        if os.path.isfile("modelh.pickle"):
-            f = open("modelh.pickle")
-            wts = pickle.load(f)
-            f.close()
-            bot.qnet.set_all_weights(wts)
-        else:
-            bot = Bot(None, GREEN, self, QLearn((2, 2, 4), ("sigmoid", "softmax")))
         for i in range(5):
-            self.bots.append(bot)
-
+            self.bots.append(Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), GREEN, self))
 
     def create_carnibots(self):
-        bot = self.bots[0]
-        if os.path.isfile("modelc.pickle"):
-            f = open("modelc.pickle")
-            wts = pickle.load(f)
-            f.close()
-            bot.qnet.set_all_weights(wts)
-        else:
-            bot = Bot(None, RED, self, QLearn((2, 2, 4), ("sigmoid", "softmax")))
         for i in range(5):
-            self.bots.append(bot)
+            self.bots.append(Bot(NNetwork((2, 2, 4), ("sigmoid", "softmax")), RED, self))
 
-
-    def update(self, dt, environ=False):
+    def update(self, dt):
         """
         Updates the population's internals. The bulk of event handling for all
         bots and food starts here.
@@ -192,10 +157,6 @@ class Population:
             sensory_input_h = []
             chased = False
             chased_bot = None
-
-            # reward
-            reward = 0
-            rewardh = 0
                 
             # This is where the bot's field of vision is put into action.
             min_theta = bot.theta - Bot.FIELD_OF_VISION_THETA / 2
@@ -207,7 +168,6 @@ class Population:
                 for food in self.food:
                     if angle_is_between(find_angle(bot.x, bot.y, food.x, food.y), min_theta, max_theta):
                         food_in_sight = True
-                        rewardh += 100
                         break
                 if food_in_sight:
                     sensory_input_h.append(1.0)
@@ -218,7 +178,6 @@ class Population:
                     if bbot.RGB == RED and angle_is_between(find_angle(bot.x, bot.y, bbot.x, bbot.y), min_theta, max_theta):
                         chased = True
                         chased_bot = bot
-                        rewardh -= 50
                         break
                 if not chased:
                     sensory_input_h.append(0.0)
@@ -236,8 +195,6 @@ class Population:
                         food_in_sight = True
                         chased = True
                         chased_bot = bbot
-                        reward += 100
-                        rewardh -= 50
                         break
                 if food_in_sight:
                     # pdb.set_trace()
@@ -257,20 +214,16 @@ class Population:
                 else:
                     sensory_input_h = [0.0, 1.0]
 
-            if environ:
-                return sensory_input if bot.RGB == RED else sensory_input_h
-
-
-                chased_bot.update(dt, sensory_input_h, rewardh)
+                chased_bot.update(dt, sensory_input_h)
 
             # Useful debugging outputs.
             #print(bot.RGB)
             #print(sensory_input)
 
             if bot.RGB == RED:
-                bot.update(dt, sensory_input, reward)
+                bot.update(dt, sensory_input)
             elif bot.RGB == GREEN:
-                bot.update(dt, sensory_input_h, rewardh)
+                bot.update(dt, sensory_input_h)
 
         if self.time_since_last_death >= 5:
             weakest = self.bots[0]
@@ -282,17 +235,15 @@ class Population:
     def save_strongest_bots(self):
         sorted_bots_by_scorec = sorted((bot for bot in self.bots if bot.RGB == RED), key=lambda x: x.score, reverse = True)
         sorted_bots_by_scoreh = sorted((bot for bot in self.bots if bot.RGB == GREEN), key=lambda x: x.score, reverse = True)
-        wts = sorted_bots_by_scorec[0].qnet.get_all_weights()
+        wts = sorted_bots_by_scorec[0].nnet.get_all_weights()
         f = open("modelc.pickle", "wb")
         pickle.dump(wts, f)
         f.close()
-        wts = sorted_bots_by_scoreh[0].qnet.get_all_weights()
+        wts = sorted_bots_by_scoreh[0].nnet.get_all_weights()
         f = open("modelh.pickle", "wb")
         pickle.dump(wts, f)
         f.close()
 
-
-    
 class Bot:
     """
     The representation of the circle thing with probes.
@@ -301,7 +252,7 @@ class Bot:
     # In pixels/pixels per second/revolutions per second/radians.
     SPAWN_RADIUS = int(settings.WINDOW_WIDTH / 20) if settings.WINDOW_WIDTH <= settings.WINDOW_HEIGHT else int(settings.WINDOW_HEIGHT / 20)
     HITBOX_RADIUS = 6
-    SPEED = 100.0
+    SPEED = 80.0
     SPEED_H = 0.9 * SPEED
     TURN_RATE = 2 * np.pi
     FIELD_OF_VISION_THETA = 45 * np.pi / 180
@@ -313,10 +264,9 @@ class Bot:
     TURN_RIGHT =    [0, 0, 1, 0]
     MOVE_FASTER =    [0, 0, 0, 1]
 
-    def __init__(self, nnet, rgb, population, qnet=None):
-        # self.qnet = qnet
-        self.qnet = qnet
-        # self.qnet = copy.deepcopy(qnet)
+    def __init__(self, nnet, rgb, population):
+        self.nnet = nnet
+        # self.nnet = copy.deepcopy(nnet)
         self.RGB = rgb
         self.pop = population
         self.theta = np.random.uniform(0, 1) * 2 * np.pi
@@ -324,7 +274,7 @@ class Bot:
         # self.y = settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS * np.random.uniform(0, 1) * np.sin(self.theta)
         self.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
         self.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
-        self.s_t = None
+        
         self.score = 0.0
 
     def _move_forward(self, dt):
@@ -353,7 +303,7 @@ class Bot:
         while self.theta < 0:
             self.theta += 2 * np.pi
 
-    def update(self, dt, sensory_input, reward = None):
+    def update(self, dt, sensory_input):
         """
         Updates the bot's internals. "Hunger" can be thought of as a score
         between '-1' and '1' where a greater value means less hungry.
@@ -361,33 +311,27 @@ class Bot:
         self.score -= 1.0 / settings.FPS / 10.0 * dt * settings.TIME_MULTIPLIER
         if self.score < -1:
             self.score = -1.0
-            # self.HITBOX_RADIUS = 10
-            # self = self.pop.mutation(self)
-        else:
-            self.HITBOX_RADIUS = 6
 
         no_herbibots = len(list(bot for bot in self.pop.bots if bot.RGB == GREEN))
         no_carnibots = len(list(bot for bot in self.pop.bots if bot.RGB == RED))
-        if no_herbibots < 2:
-            print "Yikes!"
+        if no_herbibots < 5:
             self.pop.create_herbibots()
-        if no_carnibots < 2:
-            print "Yikes!"
+        if no_carnibots < 5:
             self.pop.create_carnibots()
         
         # randomly mutate weights of bots!
-            # if np.random.uniform(0, 1) <= self.pop.mutation_rate:
-            #     bot = self.pop.bots[np.random.randint(len(self.bots))]
-            #     rgb = colors[np.random.randint(2)]
-            #     # new_bot.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
-            #     # new_bot.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
-            #     nb_c = bot.qnet.get_all_weights()
-            #     mutated = False
-            #     k = np.random.randint(len(nb_c))
-            #     i = np.random.randint(len(nb_c[k]-1))
-            #     j = np.random.randint(len(nb_c[k][i]-1))
-            #     nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
-            #     bot.qnet.set_all_weights(nb_c)
+            if np.random.uniform(0, 1) <= self.pop.mutation_rate:
+                bot = self.pop.bots[np.random.randint(len(self.bots))]
+                rgb = colors[np.random.randint(2)]
+                # new_bot.x = np.random.randint(100, settings.WINDOW_WIDTH) * np.random.uniform(0, 1) #* settings.WINDOW_WIDTH / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.cos(self.theta)
+                # new_bot.y = np.random.randint(100, settings.WINDOW_HEIGHT) * np.random.uniform(0, 1) #* settings.WINDOW_HEIGHT / 2.0 + Bot.SPAWN_RADIUS # * np.random.uniform(0, 1) * np.sin(self.theta)
+                nb_c = bot.nnet.get_all_weights()
+                mutated = False
+                k = np.random.randint(len(nb_c))
+                i = np.random.randint(len(nb_c[k]-1))
+                j = np.random.randint(len(nb_c[k][i]-1))
+                nb_c[k][i][j] = nb_c[k][i][j] * np.random.normal(1, 0.5) + np.random.standard_normal()
+                bot.nnet.set_all_weights(nb_c)
         
 
         if self.pop.time_since_last_death >= 0.2:
@@ -396,32 +340,17 @@ class Bot:
                     print "Fed bot!"
                     self.pop.feed(self, bot, is_bot = True)
                     break
-        
-        # this is where the bot gets its input and predicts output
-        # send current state(input), reward and terminal(dead?) to qlearn
-        self.s_t = sensory_input
-        output = self.qnet.output(sensory_input, reward, self.score == 0.0)
-        # output = self.qnet.output(sensory_input)
+
+        # self.nnet.feed_forward(sensory_input)
+        output = self.nnet.output(sensory_input)
         if seq_is_equal(output, Bot.MOVE_FORWARD):
             self._move_forward(dt)
         elif seq_is_equal(output, Bot.TURN_LEFT):
             self._turn_left(dt)
         elif seq_is_equal(output, Bot.TURN_RIGHT):
             self._turn_right(dt)
-        elif seq_is_equal(output, Bot.MOVE_FASTER):
-            if self.RGB == RED:
-                self._move_forward(dt)
-            else:
-                self._move_faster(dt)
-
-        # after performing action, i need to know the environ to send to train_network
-        # passing prev state, prev action, reward, new state
-        # for i in range(5):
-        # self.qnet.train_network(self.s_t, np.argmax(output), reward, self.score == 0.0, self.pop.update(dt, environ=True))
-
-        # bot, chased_bot, sens, sensh, r, rh = self.pop.get_environ(dt)
-        # bot.qnet.train_network(sens, r, bot.score == 0.0, bot.s_t, np.argmax(output))
-        # chased_bot.qnet.train_network(sensh, rh, chased_bot.score == 0.0, chased_bot.s_t, np.argmax(output))
+        elif self.RGB == GREEN and seq_is_equal(output, Bot.MOVE_FASTER):
+            self._move_faster(dt)
 
 
 class Food:

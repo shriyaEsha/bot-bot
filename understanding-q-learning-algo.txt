@@ -1,0 +1,10 @@
+Q-learning
+
+I Build Network
+II Train Network
+	1. Create deque of replay experiences
+	2. First action is Do Nothing - get next state, reward, terminal)(end? NEED IT!)
+		i. Our set of actions - forward, left, right, faster, (add nothing) or by default make it go forward
+		ii. Determine reward - +5 if eats food/other bot, +1 if near friend, -1 if near enemy
+		iii. 2 options for choosing - random action or nn prediction
+		iv. Run next action and get observed state, reward (and terminal) and store in D

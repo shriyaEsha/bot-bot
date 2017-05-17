@@ -22,7 +22,7 @@ def main():
     if os.path.isfile("save.txt") and periodically_save:
         settings.FPS, settings.WINDOW_WIDTH, settings.WINDOW_HEIGHT, settings.TIME_MULTIPLIER, pop = pickle.load(open("save.txt", "rb"))
     else:
-        pop_size = 10
+        pop_size = 30
         mutation_rate = 0.5
         no_food = 5
         # while True:
@@ -166,6 +166,7 @@ def update(dt, pop, key_pressed):
     pop.update(dt)
 
 def render(window, FONT, pop):
+    pg.event.pump()
     for food in pop.food:
         pg.draw.circle(window, food.RGB, (int(food.x), int(food.y)), food.HITBOX_RADIUS)
 
