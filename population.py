@@ -417,7 +417,7 @@ class Bot:
         # after performing action, i need to know the environ to send to train_network
         # passing prev state, prev action, reward, new state
         # for i in range(5):
-        # self.qnet.train_network(self.s_t, np.argmax(output), reward, self.score == 0.0, self.pop.update(dt, environ=True))
+        self.qnet.train_network(self.s_t, np.argmax(output), reward, self.score == 0.0, self.pop.update(dt, environ=True))
 
         # bot, chased_bot, sens, sensh, r, rh = self.pop.get_environ(dt)
         # bot.qnet.train_network(sens, r, bot.score == 0.0, bot.s_t, np.argmax(output))
